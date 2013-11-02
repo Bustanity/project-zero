@@ -488,7 +488,7 @@ var game =
                 game.flags["ERROR"] = "Unable to download required game resources!";
             }
 
-            else if (game.imglib.loadedPictures === 11)
+            else if (game.imglib.loadedPictures === 10)
             {
                 game.flags["LOADING"] = false;
             }
@@ -643,7 +643,6 @@ var game =
                 }
 
                 // Create bird
-
                 var bird = new Entity("bird", -50, 130 - (Math.random() * 100),  0.5 + Math.random() * 1.5, 0, game.imglib.sprites.bird);
                 bird.counter = 0;
 
