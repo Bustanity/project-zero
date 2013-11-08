@@ -104,7 +104,7 @@ function ImageLib()
             [
                 this.loadImage("images/pillow.png"),
                 this.loadImage("images/pillow2.png"),
-                this.loadImage("images/pillow3.png"),
+                this.loadImage("images/pillow2.png"),
                 this.loadImage("images/eastereggpillow.png"),
             ]
     };
