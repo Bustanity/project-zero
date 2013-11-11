@@ -94,7 +94,9 @@ function ImageLib()
     {
         "logo": this.loadImage("images/logo.png"),
         "button": this.loadImage("images/button.png"),
-        "window": this.loadImage("images/window.png")
+        "window": this.loadImage("images/window.png"),
+        "playerbar": this.loadImage("images/player_bar.png"),
+        "settings": this.loadImage("images/settings_button.png")
     };
 
     this.sprites =
@@ -104,10 +106,22 @@ function ImageLib()
             [
                 this.loadImage("images/pillow.png"),
                 this.loadImage("images/pillow2.png"),
-                this.loadImage("images/pillow2.png"),
-                this.loadImage("images/eastereggpillow.png"),
+                this.loadImage("images/eastereggpillow.png")
+            ],
+        "humans":
+            [
+                this.loadImage("images/human.png"),
+                this.loadImage("images/human2.png"),
+                this.loadImage("images/humanhitlft1.png"),
+                this.loadImage("images/humanhitlft2.png"),
+                this.loadImage("images/humanhitrig1.png"),
+                this.loadImage("images/humanhitrig2.png")
+            ],
+        "blocks":
+            [
+                this.loadImage("images/dirt.png")
             ]
-    };
+    }
 }
 
 // Entity Methods
@@ -129,6 +143,39 @@ function Particle(x, y, radius, vx, vy, color)
     {
         game.fillCircle(this.x, this.y, this.radius, this.color);
     };
+};
+
+function Block(blockId, x, y, blocking)
+{
+    this.blockId = blockId;
+
+    this.image = null;
+
+    this.x = x;
+    this.y = y;
+
+    this.blocking = blocking;
+
+    this.draw = function()
+    {
+        if (this.image == null) this.image = game.imglib.sprites.blocks[this.blockId];
+        game.drawImage(this.image, this.x, this.y);
+    };
+
+    this.collides = function(entity)
+    {
+        if (!blocking) return false;
+
+        if (entity.x < this.x + 32 && entity.x + 64 > this.x)
+        {
+            if (entity.y < this.y + 32 && entity.y + 64 > this.y)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 function Entity(name, x, y, vx, vy, images)
@@ -140,9 +187,15 @@ function Entity(name, x, y, vx, vy, images)
     this.vx = vx;
     this.vy = vy;
 
+    this.speed = 1;
+    this.friction = 0.80;
+
     this.images = images;
 
+    this.currentImg = 0;
+
     this.composition = "source-over";
+    this.counter = 0;
 
     this.onupdate = function() { };
 
@@ -154,7 +207,7 @@ function Entity(name, x, y, vx, vy, images)
         }
         else
         {
-            game.drawImage(this.images[0], this.x, this.y, this.composition);
+            game.drawImage(this.images[this.currentImg], this.x, this.y, this.composition);
         }
     };
 }
@@ -182,6 +235,10 @@ function createWindow(title)
         game.drawText(title, this.x + (651 / 2), 70, "#FFFFFF");
     };
 
+    wndEntity.ondrawcontent = function() { };
+
+    wndEntity.onclose = function() { };
+
     return wndEntity;
 }
 
@@ -192,13 +249,13 @@ var game =
     APP_WIDTH: 960,
     APP_HEIGHT: 420,
 
-    APP_VERSION: "'Cloud' (0.1.2)",
+    APP_VERSION: "'Cloud' (0.1.4)",
 
     canvas: document.getElementById("canvas"),
     context: this.canvas.getContext("2d"),
 
-    imglib: new ImageLib(),
-    soundlib: new SoundLib(),
+    imglib: null,
+    soundlib: null,
 
     activeSound: null,
 
@@ -221,6 +278,8 @@ var game =
             x: 0,
             y: 0,
 
+            health: 100,
+
             level: 0,
 
             money: 0,
@@ -230,18 +289,75 @@ var game =
                 attack: 0,
                 defence: 0,
                 magic: 0
-            }
+            },
+
+            entity: null,
+            stageId: 0
         },
 
-        level:
-        {
-            levelId: 0
-        }
+        levels:
+            [
+                {
+                    bgcolor: "#222222",
+                    /*bgimg: game.backgrounds.menu,*/
+
+                    gravity: 1.80,
+                    blocks:
+                        [
+                            // Ground
+                            new Block(0, 0, 420 - 32, true),
+                            new Block(0, 32, 420 - 32, true),
+                            new Block(0, 32 * 2, 420 - 32, true),
+                            new Block(0, 32 * 3, 420 - 32, true),
+                            new Block(0, 32 * 4, 420 - 32, true),
+                            new Block(0, 32 * 5, 420 - 32, true),
+                            new Block(0, 32 * 6, 420 - 32, true),
+                            new Block(0, 32 * 7, 420 - 32, true),
+                            new Block(0, 32 * 8, 420 - 32, true),
+                            new Block(0, 32 * 9, 420 - 32, true),
+                            new Block(0, 32 * 10, 420 - 32, true),
+                            new Block(0, 32 * 11, 420 - 32, true),
+                            new Block(0, 32 * 12, 420 - 32, true),
+                            new Block(0, 32 * 13, 420 - 32, true),
+                            new Block(0, 32 * 14, 420 - 32, true),
+                            new Block(0, 32 * 15, 420 - 32, true),
+                            new Block(0, 32 * 16, 420 - 32, true),
+                            new Block(0, 32 * 17, 420 - 32, true),
+                            new Block(0, 32 * 18, 420 - 32, true),
+                            new Block(0, 32 * 19, 420 - 32, true),
+                            new Block(0, 32 * 20, 420 - 32, true),
+                            new Block(0, 32 * 21, 420 - 32, true),
+                            new Block(0, 32 * 22, 420 - 32, true),
+                            new Block(0, 32 * 23, 420 - 32, true),
+                            new Block(0, 32 * 24, 420 - 32, true),
+                            new Block(0, 32 * 25, 420 - 32, true),
+                            new Block(0, 32 * 26, 420 - 32, true),
+                            new Block(0, 32 * 27, 420 - 32, true),
+                            new Block(0, 32 * 28, 420 - 32, true),
+                            new Block(0, 32 * 29, 420 - 32, true),
+
+                            // Air
+
+                            new Block(0, 0, 420 - 32 - 128, true),
+                            new Block(0, 32, 420 - 32 - 128, true),
+                            new Block(0, 32 * 2, 420 - 32 - 128, true),
+                            new Block(0, 32 * 3, 420 - 32 - 128, true),
+                            new Block(0, 32 * 4, 420 - 32 - 128, true),
+                            new Block(0, 32 * 5, 420 - 32 - 128, true),
+                            new Block(0, 32 * 6, 420 - 32 - 128, true),
+                            new Block(0, 960 - 32, 420 - 32 - 128, true),
+                            new Block(0, 960 - (32 * 2), 420 - 32 - 128, true),
+                            new Block(0, 960 - (32 * 3), 420 - 32 - 128, true),
+                            new Block(0, 960 - (32 * 4), 420 - 32 - 128, true),
+                            new Block(0, 960 - (32 * 5), 420 - 32 - 128, true),
+                            new Block(0, 960 - (32 * 6), 420 - 32 - 128, true)
+                        ]
+                }
+            ]
     },
 
     mouseEvents: [],
-
-    focused: true,
+    keys: [],
 
     setColor: function(color)
     {
@@ -288,6 +404,40 @@ var game =
         game.context.globalCompositeOperation = "source-over";
     },
 
+    setWindow: function(window)
+    {
+        if (game.flags["ACTIVE_WINDOW"] != null)
+        {
+            game.flags["ACTIVE_WINDOW"].onclose();
+
+            for (var i = 0; i < game.mouseEvents.length; i++)
+            {
+                if (game.mouseEvents[i].parent == game.flags["ACTIVE_WINDOW"])
+                {
+                    game.mouseEvents.splice(i, 1);
+                }
+            }
+
+            game.closeWindow();
+        }
+
+        game.flags["ACTIVE_WINDOW"] = window;
+    },
+
+    closeWindow: function()
+    {
+        for (var i = 0; i < game.mouseEvents.length; i++)
+        {
+            var event = game.mouseEvents[i];
+            if (event.parent == game.flags["ACTIVE_WINDOW"])
+            {
+                game.mouseEvents.splice(i, 1);
+            }
+        }
+
+        game.flags["ACTIVE_WINDOW"] = null;
+    },
+
     updateCanvas: function()
     {
         game.canvas.width = game.APP_WIDTH;
@@ -319,16 +469,17 @@ var game =
             {
                 if (game.mouse.y > buttonY && game.mouse.y < buttonY + 20)
                 {
-                     for (var i = 0; i < game.mouseEvents.length; i++)
+                    game.flags["ACTIVE_WINDOW"].onclose();
+
+                    for (var i = 0; i < game.mouseEvents.length; i++)
                     {
-                        var event = game.mouseEvents[i];
-                        if (event.parent == game.flags["ACTIVE_WINDOW"])
+                        if (game.mouseEvents[i].parent == game.flags["ACTIVE_WINDOW"])
                         {
                             game.mouseEvents.splice(i, 1);
                         }
                     }
 
-                    game.flags["ACTIVE_WINDOW"] = null;
+                    game.closeWindow();
                 }
             }
         }
@@ -393,26 +544,45 @@ var game =
         }
     },
 
+    showSettings: function()
+    {
+        var tmpWindow = createWindow("Settings");
+        tmpWindow.ondrawcontent = function()
+        {
+            game.setText("14px Arial", "center");
+            game.drawImage(game.imglib.gui.button, this.x + (651 / 2) - 100, this.y + 100, "source-over");
+            game.drawText("Mute / Unmute", this.x + (651 / 2), this.y + 125, "#FFFFFF");
+
+        };
+
+        game.setWindow(tmpWindow);
+
+        game.mouseEvents.push
+        (
+            new MouseEvent
+            (
+                tmpWindow,
+                tmpWindow.x + (651 / 2) - 100,
+                tmpWindow.y + 100,
+                tmpWindow.x + (651 / 2) - 100 + 200,
+                tmpWindow.y + 100 + 45,
+                function()
+                {
+                    game.flags["MUTED"] = !game.flags["MUTED"];
+
+                    if (game.flags["MUTED"]) game.activeSound.pause();
+                    else game.activeSound.play();
+                }
+            )
+        );
+    },
+
     start: function()
     {
+        game.imglib = new ImageLib();
+        game.soundlib = new SoundLib();
+
         game.updateCanvas();
-
-        window.addEventListener("blur", function() { game.focused = false; }, true);
-        document.addEventListener("blur", function() { game.focused = false; }, true);
-        /*
-        game.canvas.addEventListener
-        (
-            "mousedown",
-            function(e) { game.updateMouse(e); },
-            true
-        );
-
-        game.canvas.addEventListener
-        (
-            "mousemove",
-            function(e) { game.updateMouse(e); },
-            true
-        );*/
 
         game.canvas.addEventListener
         (
@@ -421,41 +591,19 @@ var game =
             true
         );
 
-        /*
-        game.canvas.addEventListener
+        document.addEventListener
         (
-            "mouseup",
-            function(e) { game.updateMouse(e); },
+            "keydown",
+            function(e) { game.keys[e.keyCode] = true; },
             true
         );
 
-
-        game.canvas.addEventListener
+        document.addEventListener
         (
-            "touchstart",
-            function(e)
-            {
-
-            }
+            "keyup",
+            function(e) { game.keys[e.keyCode] = false; },
+            true
         );
-
-        game.canvas.addEventListener
-        (
-            "touchmove",
-            function(e)
-            {
-
-            }
-        );
-
-        game.canvas.addEventListener
-        (
-            "touchend",
-            function(e)
-            {
-
-            }
-        );*/
 
         game.flags["LOADING"] = true;
         game.flags["MUTED"] = false;
@@ -488,15 +636,10 @@ var game =
                 game.flags["ERROR"] = "Unable to download required game resources!";
             }
 
-            else if (game.imglib.loadedPictures === 10)
+            else if (game.imglib.loadedPictures === 18)
             {
                 game.flags["LOADING"] = false;
             }
-        }
-
-        if (!game.focused)
-        {
-            return;
         }
 
         if (game.flags["intro"] != null)
@@ -515,7 +658,7 @@ var game =
                     game.drawText("we can buy a webhost, that would agree to host this brilliant yet not-existant game.", window.x + 50, window.y + 200, "#FFFFFF");
                 };
 
-                game.flags["ACTIVE_WINDOW"] = window;
+                game.setWindow(window);
 
                 game.flags["intro"] = null;
 
@@ -537,44 +680,124 @@ var game =
                                     game.drawText("Load Game", this.x + (651 / 2), this.y + 250, "#FFFFFF");
                                 };
 
-                                game.flags["ACTIVE_WINDOW"] = tmpWindow;
+                                game.setWindow(tmpWindow);
+
+                                game.mouseEvents.push
+                                (
+                                    new MouseEvent // New Game
+                                    (
+                                        tmpWindow,
+                                        tmpWindow.x + (651 / 2) - 100,
+                                        tmpWindow.y + 150,
+                                        tmpWindow.x + (651 / 2) - 100 + 200,
+                                        tmpWindow.y + 150 + 45,
+
+                                        function()
+                                        {
+                                            game.world.player.name = prompt("Enter your character's name");
+                                            game.closeWindow();
+
+                                            game.stopSound();
+                                            game.playSound(game.soundlib.sounds.complexity, true);
+
+                                            game.flags["menu"] = null;
+                                            game.flags["IN_GAME"] = true;
+
+                                            game.entities = [];
+                                            var playerEntity = new Entity("player", 255, 255, 0, 0, game.imglib.sprites.humans);
+
+                                            playerEntity.speed = 1.3;
+                                            playerEntity.hit = false;
+
+                                            playerEntity.onupdate = function()
+                                            {
+                                                if (game.keys[87] == true)
+                                                {
+                                                    if (this.vy == 0)
+                                                        this.vy -= 50;
+                                                }
+
+                                                if (game.keys[32])
+                                                {
+                                                    if (!this.hit)
+                                                    {
+                                                        this.hit = true;
+                                                        this.counter = 0;
+                                                    }
+                                                }
+                                                else if (game.keys[65] == true)
+                                                {
+                                                    this.currentImg = 1;
+                                                    this.vx -= this.speed;
+                                                }
+                                                else if (game.keys[68] == true)
+                                                {
+                                                    this.currentImg = 0;
+                                                    this.vx += this.speed;
+                                                }
+
+                                                if (this.hit)
+                                                {
+                                                    if (this.counter < 5)
+                                                    {
+                                                        if (this.currentImg == 1) // Left
+                                                            this.currentImg = 3;
+                                                        else if (this.currentImg == 0)
+                                                            this.currentImg = 5;
+                                                    }
+                                                    else if (this.counter > 25)
+                                                    {
+                                                        if (this.currentImg == 3) // Left
+                                                            this.currentImg = 1
+                                                        else if (this.currentImg == 5)
+                                                            this.currentImg = 0;
+
+                                                        this.counter = 0;
+                                                        this.hit = false;
+                                                    }
+                                                }
+                                            };
+
+                                            game.world.player.entity = playerEntity;
+
+                                            game.entities.push(playerEntity);
+
+                                            game.mouseEvents.push
+                                            (
+                                                new MouseEvent
+                                                (
+                                                    null,
+                                                    game.APP_WIDTH - 50,
+                                                    25,
+                                                    game.APP_WIDTH - 50 + 24,
+                                                    25 + 24,
+
+                                                    game.showSettings
+                                                )
+                                            );
+                                        }
+                                    ),
+
+                                    new MouseEvent // Load Game
+                                    (
+                                        tmpWindow,
+                                        tmpWindow.x + (651 / 2) - 100,
+                                        tmpWindow.y + 225,
+                                        tmpWindow.x + (651 / 2) - 100 + 200,
+                                        tmpWindow.y + 225 + 45,
+
+                                        function()
+                                        {
+                                            game.closeWindow();
+                                        }
+                                    )
+                                );
                             }
                         },
 
                         {
                             "caption": "Settings",
-                            "action": function()
-                            {
-                                var tmpWindow = createWindow("Settings");
-                                tmpWindow.ondrawcontent = function()
-                                {
-                                    game.setText("14px Arial", "center");
-                                    game.drawImage(game.imglib.gui.button, this.x + (651 / 2) - 100, this.y + 100, "source-over");
-                                    game.drawText("Mute / Unmute", this.x + (651 / 2), this.y + 125, "#FFFFFF");
-
-                                };
-
-                                game.flags["ACTIVE_WINDOW"] = tmpWindow;
-
-                                game.mouseEvents.push
-                                    (
-                                        new MouseEvent
-                                        (
-                                            tmpWindow,
-                                            tmpWindow.x + (651 / 2) - 100,
-                                            tmpWindow.y + 100,
-                                            tmpWindow.x + (651 / 2) - 100 + 200,
-                                            tmpWindow.y + 100 + 45,
-                                            function()
-                                            {
-                                                game.flags["MUTED"] = !game.flags["MUTED"];
-
-                                                if (game.flags["MUTED"]) game.activeSound.pause();
-                                                else game.activeSound.play();
-                                            }
-                                        )
-                                    );
-                            }
+                            "action": game.showSettings
                         },
 
                         {
@@ -590,7 +813,7 @@ var game =
                                     game.drawText("@LolSumor - Graphics Designer", this.x + 50, this.y + 180, "#FFFFFF");
                                 };
 
-                                game.flags["ACTIVE_WINDOW"] = tmpWindow;
+                                game.setWindow(tmpWindow);
                             }
                         }
                     ]
@@ -635,7 +858,7 @@ var game =
                     }
                     else
                     {
-                        cloudSprite = Math.floor(Math.random() * 3);
+                        cloudSprite = Math.floor(Math.random());
                     }
 
                     var cloud = new Entity("cloud", -50 - (Math.random() * 50), 5 + (Math.random() * 50), 0.2 + Math.random() * 0.3, 0, game.imglib.sprites.clouds[cloudSprite]);
@@ -649,23 +872,35 @@ var game =
                 bird.onupdate =
                     function()
                     {
-                        this.counter++;
-
-                        if (this.counter > 40)
-                        {
-                            this.counter = 0;
-                        }
-                    };
-
-                bird.draw =
-                    function()
-                    {
-                        if (this.counter < 20) game.drawImage(this.images[0], this.x, this.y, this.composition);
-                        else game.drawImage(this.images[1], this.x, this.y, this.composition);
+                        if (this.counter < 30) this.currentImg = 0;
+                        else this.currentImg = 1;
                     };
 
                 game.entities.push(bird);
                 game.flags["menu"].active = setTimeout(function() {game.flags["menu"].active = null}, 10000);
+            }
+        }
+        else if (game.flags["IN_GAME"] != null)
+        {
+            if (game.world.player.health < 1)
+            {
+                game.flags["IN_GAME"] = null;
+
+                var tmpWindow = createWindow("Game Over");
+                tmpWindow.ondrawcontent = function()
+                {
+                    game.setText("14px Alias", "left");
+                    game.drawText("Seems like it is game over for you, " + game.world.player.name + ".", this.x + 50, this.y + 120, "#FFFFFF");
+                };
+
+                tmpWindow.onclose = function()
+                {
+                    game.flags["intro"] = true;
+                };
+
+                game.setWindow(tmpWindow);
+
+                return;
             }
         }
 
@@ -679,9 +914,41 @@ var game =
             var entity = game.entities[i];
 
             entity.onupdate();
+            entity.counter++;
+
+            if (entity.counter > 60) entity.counter = 0;
+
+            if (entity.radius == null && entity.friction != null) // Not a particle
+            {
+                entity.vx *= entity.friction;
+                entity.vy *= entity.friction;
+            }
 
             entity.x += entity.vx;
             entity.y += entity.vy;
+
+            if (game.flags["IN_GAME"])
+            {
+                var collides = false;
+
+                var level = game.world.levels[game.world.player.stageId];
+                for (var i = 0; i < level.blocks.length; i++)
+                {
+
+                    var block = level.blocks[i];
+                    if (block.collides(entity))
+                    {
+                        if (entity.vy > 0)
+                        entity.vy = 0;
+                        collides = true;
+                    }
+                }
+
+                if (!collides)
+                {
+                    entity.vy += level.gravity;
+                }
+            }
 
             if (entity.x < -500 || entity.x > game.APP_WIDTH + 500) game.entities.splice(i, 1);
             if (entity.y < -500 || entity.y > game.APP_HEIGHT + 500) game.entities.splice(i, 1);
@@ -703,15 +970,6 @@ var game =
         {
             game.setText("bold 32px Arial", "center");
             game.drawText(game.APP_NAME + ": Loading", game.APP_WIDTH / 2, game.APP_HEIGHT / 2, "#FFFFFF");
-        }
-
-        else if (!game.focused)
-        {
-            game.setText("bold 32px Arial", "center");
-            game.drawText(game.APP_NAME + ": Focus Lost", game.APP_WIDTH / 2, game.APP_HEIGHT / 2, "#FFFFFF");
-            game.drawText("Click anywhere on the canvas to refocus", game.APP_WIDTH / 2, game.APP_HEIGHT / 2 + 35, "#FFFFFF");
-
-            return;
         }
 
         else if (game.flags["intro"] != null)
@@ -753,6 +1011,38 @@ var game =
 
                 game.drawText(button.caption, x + (200 / 2), y + (55 / 2), "#FFFFFF");
             }
+        }
+        else if (game.flags["IN_GAME"] != null)
+        {
+            var stage = game.world.levels[game.world.player.stageId];
+            game.fillRect(0, 0, game.APP_WIDTH, game.APP_HEIGHT, stage.bgcolor);
+
+            //game.drawImage(stage.bgimg, 0, 0);
+
+            game.setText("bold 18px Arial", "center");
+            game.drawText("Use WASD keys to move, spacebar to hit", game.APP_WIDTH / 2, 100, "#FFFFFF");
+
+            for (var i = 0; i < stage.blocks.length; i++)
+            {
+                stage.blocks[i].draw();
+            }
+
+            for (var i = 0; i < game.entities.length; i++)
+            {
+                game.entities[i].draw();
+            }
+
+            game.drawImage(game.imglib.gui.playerbar, 40, 15, "source-over");
+
+            game.setText("bold 13px Arial", "center");
+            game.drawText(game.world.player.name, 57 + (181 / 2), 43, "#FFFFFF");
+
+            game.fillRect(60 + (181 - 104) / 2, 50, 104, 18, "#FFFFFF");
+            game.fillRect(59 + (183 - 100) / 2, 52, game.world.player.health, 14, "#FF0000");
+
+            game.drawText(game.world.player.health + " / 100", 57 + (181 / 2), 52 + (22 / 2), "#000000");
+
+            game.drawImage(game.imglib.gui.settings, game.APP_WIDTH - 50, 25, "source-over");
         }
 
         if (game.flags["ACTIVE_WINDOW"] != null)
